@@ -31,7 +31,7 @@ jobs:
           import json
           from pathlib import Path
 
-          path = Path("public/dashboard.json")
+          path = Path("public/dashboard-v31-test.json")
           data = json.loads(path.read_text(encoding="utf-8"))
 
           print("School:", data["school"])
