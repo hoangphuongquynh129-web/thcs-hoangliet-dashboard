@@ -86,3 +86,17 @@ print("V3.1 overview:", overview)
 print("Student groups:", list(output["students"]))
 print("Personnel groups:", list(output["personnel"]))
 print("V3.1 JSON generated successfully")
+
+print("\n=== KIEM TRA DU LIEU CHI TIET ===")
+
+for name, rows in output["students"].items():
+    print("Hoc sinh -", name, ":", len(rows), "dong")
+    if rows:
+        print("  Mau:", json.dumps(rows[0], ensure_ascii=False))
+
+for name, rows in output["personnel"].items():
+    print("Nhan su -", name, ":", len(rows), "dong")
+    if rows:
+        print("  Mau:", json.dumps(rows[0], ensure_ascii=False))
+
+print("=== KET THUC KIEM TRA ===")
