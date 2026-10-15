@@ -100,3 +100,36 @@ for name, rows in output["personnel"].items():
         print("  Mau:", json.dumps(rows[0], ensure_ascii=False))
 
 print("=== KET THUC KIEM TRA ===")
+
+print("\n=== DOI CHIEU SO LIEU ===")
+
+grade_rows = output["students"]["byGrade"]
+campus_rows = output["students"]["byCampus"]
+
+grade_total = sum(r["danh sách"] for r in grade_rows)
+campus_total = sum(r["danh sách"] for r in campus_rows)
+
+print("Tong hoc sinh:", overview["students"])
+print("Tong theo khoi:", grade_total)
+print("Tong theo co so:", campus_total)
+
+if grade_total != overview["students"]:
+    raise ValueError("Student grade totals mismatch")
+
+if campus_total != overview["students"]:
+    raise ValueError("Student campus totals mismatch")
+
+position_rows = output["personnel"]["byPosition"]
+position_total = sum(r["count"] for r in position_rows)
+
+print("Tong nhan su:", overview["staff"])
+print("Tong theo vi tri:", position_total)
+
+if position_total != overview["staff"]:
+    raise ValueError("Staff position totals mismatch")
+
+print("\nNhan su theo co so:")
+for row in output["personnel"]["byCampus"]:
+    print(row["label"], ":", row["count"])
+
+print("=== DOI CHIEU HOAN THANH ===")
