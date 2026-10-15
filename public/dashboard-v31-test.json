@@ -1,0 +1,217 @@
+{
+  "school": "THCS Hoàng Liệt",
+  "schoolYear": "2026-2027",
+  "updatedAt": "2026-10-15T18:10:32.359Z",
+  "data": {
+    "students": 6110,
+    "classes": 121,
+    "staff": 227,
+    "campuses": 2
+  },
+  "students": {
+    "byGrade": [
+      {
+        "khối": "Khối 6",
+        "danh sách": 1593,
+        "nam": 800,
+        "nữ": 793
+      },
+      {
+        "khối": "Khối 7",
+        "danh sách": 1522,
+        "nam": 801,
+        "nữ": 721
+      },
+      {
+        "khối": "Khối 8",
+        "danh sách": 1568,
+        "nam": 837,
+        "nữ": 731
+      },
+      {
+        "khối": "Khối 9",
+        "danh sách": 1427,
+        "nam": 713,
+        "nữ": 714
+      }
+    ],
+    "byCampus": [
+      {
+        "cơ sở": "Trụ sở chính",
+        "danh sách": 2740,
+        "nam": 1439,
+        "nữ": 1301
+      },
+      {
+        "cơ sở": "Phân hiệu",
+        "danh sách": 3370,
+        "nam": 1712,
+        "nữ": 1658
+      }
+    ]
+  },
+  "personnel": {
+    "byPosition": [
+      {
+        "label": "Cán bộ quản lý",
+        "count": 3
+      },
+      {
+        "label": "Giáo viên",
+        "count": 207
+      },
+      {
+        "label": "Nhân viên",
+        "count": 17
+      }
+    ],
+    "bySubject": [
+      {
+        "label": "Công nghệ",
+        "count": 1
+      },
+      {
+        "label": "Công nghệ (Nông nghiệp)",
+        "count": 2
+      },
+      {
+        "label": "Giáo dục công dân",
+        "count": 6
+      },
+      {
+        "label": "Giáo dục thể chất",
+        "count": 8
+      },
+      {
+        "label": "Hóa học",
+        "count": 8
+      },
+      {
+        "label": "Khoa học tự nhiên",
+        "count": 19
+      },
+      {
+        "label": "Lịch sử",
+        "count": 8
+      },
+      {
+        "label": "Lịch sử và địa lý",
+        "count": 5
+      },
+      {
+        "label": "Mỹ thuật",
+        "count": 4
+      },
+      {
+        "label": "Nghệ thuật",
+        "count": 3
+      },
+      {
+        "label": "Ngữ văn",
+        "count": 39
+      },
+      {
+        "label": "Sinh học",
+        "count": 2
+      },
+      {
+        "label": "Thể dục",
+        "count": 6
+      },
+      {
+        "label": "Tin học",
+        "count": 6
+      },
+      {
+        "label": "Tiếng Anh",
+        "count": 23
+      },
+      {
+        "label": "Toán",
+        "count": 46
+      },
+      {
+        "label": "Vật lý",
+        "count": 9
+      },
+      {
+        "label": "Âm nhạc",
+        "count": 7
+      },
+      {
+        "label": "Địa lý",
+        "count": 7
+      }
+    ],
+    "byQualification": [
+      {
+        "label": "Cao đẳng",
+        "count": 1
+      },
+      {
+        "label": "Thạc sĩ",
+        "count": 33
+      },
+      {
+        "label": "Trung cấp",
+        "count": 7
+      },
+      {
+        "label": "Trình độ khác",
+        "count": 4
+      },
+      {
+        "label": "Đại học",
+        "count": 51
+      },
+      {
+        "label": "Đại học sư phạm",
+        "count": 127
+      },
+      {
+        "label": "Đại học và có chứng chỉ BDNVSP",
+        "count": 4
+      }
+    ],
+    "byContract": [
+      {
+        "label": "Hợp đồng lao động trên 1 năm",
+        "count": 76
+      },
+      {
+        "label": "Hợp đồng lao động từ 1 năm trở xuống",
+        "count": 11
+      },
+      {
+        "label": "Hợp đồng theo nghị định 111",
+        "count": 2
+      },
+      {
+        "label": "Hợp đồng theo nghị định 68",
+        "count": 2
+      },
+      {
+        "label": "Thỉnh giảng",
+        "count": 1
+      },
+      {
+        "label": "Viên chức/Công chức HĐLV không xác định thời hạn",
+        "count": 103
+      },
+      {
+        "label": "Viên chức/Công chức HĐLV xác định thời hạn",
+        "count": 32
+      }
+    ],
+    "byCampus": [
+      {
+        "label": "Trụ sở chính",
+        "count": 105
+      },
+      {
+        "label": "Phân hiệu",
+        "count": 122
+      }
+    ]
+  }
+}
