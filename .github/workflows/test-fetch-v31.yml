@@ -39,3 +39,11 @@ jobs:
           print("Overview:", data["data"])
           print("JSON test passed")
           PY
+
+      - name: Upload V3.1 JSON artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-v31-json
+          path: public/dashboard-v31-test.json
+          if-no-files-found: error
+          retention-days: 7
