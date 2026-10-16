@@ -77,6 +77,31 @@ students = {
     'byCampus': groups(student_source, 'byCampus', 'cơ sở', 'danh sách'),
     'byGender': groups(student_source, 'byGender', 'label', 'count'),
 }
+# Public, school-wide aggregates only. Do not expose individual ethnicity labels.
+raw_ethnicity = groups(student_source, 'byEthnicity', 'label', 'count')
+ethnic = {'Kinh': 0, 'Dân tộc thiểu số': 0, 'Chưa xác định': 0}
+import unicodedata
+
+def normalized(value):
+    value = unicodedata.normalize('NFD', value.strip().casefold())
+    return ''.join(ch for ch in value if unicodedata.category(ch) != 'Mn').replace('đ', 'd')
+
+for item in raw_ethnicity:
+    label = normalized(item['label'])
+    if label == 'kinh':
+        ethnic['Kinh'] += item['count']
+    elif label in ('', 'chua co thong tin', 'chua xac dinh', 'khong ro', 'khong xac dinh'):
+        ethnic['Chưa xác định'] += item['count']
+    else:
+        ethnic['Dân tộc thiểu số'] += item['count']
+students['byEthnicity'] = [{'label': k, 'count': v} for k, v in ethnic.items()]
+
+# Retain source-defined swimming categories; do not infer yes/no from unfamiliar labels.
+students['bySwimming'] = groups(student_source, 'bySwimming', 'label', 'count')
+for key in ('byEthnicity', 'bySwimming'):
+    if sum(item['count'] for item in students[key]) != clean['students']:
+        raise ValueError(f'{key} does not reconcile to total students')
+
 personnel = {
     k: groups(personnel_source, k, 'label', 'count')
     for k in ('byPosition', 'bySubject', 'byQualification', 'byContract', 'byCampus')
