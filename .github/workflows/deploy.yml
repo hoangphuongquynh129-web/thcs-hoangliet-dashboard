@@ -24,9 +24,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Fetch approved statistics
-        env:
-          DASHBOARD_API_URL: ${{ secrets.DASHBOARD_API_URL }}
-        run: python scripts/fetch_data.py
+  env:
+    DASHBOARD_API_V32_URL: ${{ secrets.DASHBOARD_API_V32_URL }}
+  run: python scripts/fetch_data.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
