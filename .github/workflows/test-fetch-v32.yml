@@ -1,0 +1,23 @@
+name: Test Dashboard API V3.2
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-v32:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch and validate V3.2 (no publish)
+        env:
+          DASHBOARD_API_V32_URL: ${{ secrets.DASHBOARD_API_V32_URL }}
+        run: python scripts/test_fetch_v32.py
+      - name: Upload diagnostic report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-v32-validation
+          path: v32-test-report.json
+          retention-days: 7
