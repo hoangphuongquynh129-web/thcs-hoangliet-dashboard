@@ -89,6 +89,45 @@ for section, key, total in ((students, 'byGrade', clean['students']),
     if actual != total:
         raise ValueError(f'{key} totals {actual}, expected {total}')
 
+# Validate grade x campus cross-tab against both published marginal totals.
+raw_cross = student_source.get('byGradeCampus')
+if not isinstance(raw_cross, list) or len(raw_cross) != 4:
+    raise ValueError('Expected four grade-campus rows')
+by_grade = {r['label']: r['count'] for r in students['byGrade']}
+by_campus = {r['label']: r['count'] for r in students['byCampus']}
+if len(by_grade) != 4 or len(by_campus) != 2:
+    raise ValueError('Duplicate or missing grade/campus labels')
+expected_grades = {f'Khối {n}' for n in range(6, 10)}
+if set(by_grade) != expected_grades or set(by_campus) != {'Trụ sở chính', 'Phân hiệu'}:
+    raise ValueError('Unexpected grade or campus labels')
+cross = []
+seen = set()
+for item in raw_cross:
+    if not isinstance(item, dict):
+        raise ValueError('Invalid grade-campus row')
+    label = item.get('label')
+    if not isinstance(label, str) or label not in expected_grades or label in seen:
+        raise ValueError(f'Unexpected/duplicate grade-campus label: {label}')
+    seen.add(label)
+    values = [item.get(k) for k in ('mainCampus', 'branchCampus', 'total')]
+    if any(type(v) is not int or v < 0 for v in values):
+        raise ValueError(f'Invalid grade-campus counts: {label}')
+    main, branch, total = values
+    if main + branch != total or total != by_grade[label]:
+        raise ValueError(f'Grade-campus totals do not reconcile: {label}')
+    cross.append({'label': label, 'mainCampus': main,
+                  'branchCampus': branch, 'total': total})
+if seen != expected_grades:
+    raise ValueError('Missing grade-campus row')
+cross.sort(key=lambda r: int(r['label'].split()[-1]))
+if sum(r['mainCampus'] for r in cross) != by_campus['Trụ sở chính']:
+    raise ValueError('Main campus total does not reconcile')
+if sum(r['branchCampus'] for r in cross) != by_campus['Phân hiệu']:
+    raise ValueError('Branch campus total does not reconcile')
+if sum(r['total'] for r in cross) != clean['students']:
+    raise ValueError('Grade-campus grand total does not reconcile')
+students['byGradeCampus'] = cross
+
 output = {
     'school': settings['schoolName'].strip(),
     'schoolYear': settings['schoolYear'].strip(),
@@ -104,6 +143,6 @@ path = Path('public/dashboard.json')
 path.parent.mkdir(parents=True, exist_ok=True)
 # Write only after all validations have passed.
 path.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding='utf-8')
-print('PASS: Dashboard V3.2 API and settings validated')
+print('PASS: Dashboard V3.2 API, settings and grade-campus totals validated')
 print('Published approved totals:', clean)
 print('Published aggregate groups:', list(students), list(personnel))
