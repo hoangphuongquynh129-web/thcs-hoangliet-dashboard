@@ -1,4 +1,4 @@
-"""Fetch and validate public Dashboard V3.2 aggregates for GitHub Pages."""
+"""Fetch and validate approved public Dashboard V3.2 aggregates for GitHub Pages."""
 import json
 import os
 import urllib.request
@@ -53,19 +53,24 @@ for c in campuses:
         raise ValueError('Invalid campus setting')
     public_campuses.append({'name': c['name'].strip(), 'address': c['address'].strip()})
 
-# Strict allowlist: publish only these aggregate dimensions.
+# Strict allowlist: school-wide aggregate dimensions only.
 def groups(parent, key, label_key, count_key, *, allow_empty=False):
     items = parent.get(key)
     if not isinstance(items, list) or (not items and not allow_empty):
         raise ValueError(f'Missing or empty aggregate: {key}')
     result = []
+    seen = set()
     for item in items:
         if not isinstance(item, dict):
             raise ValueError(f'Invalid row in {key}')
         label, count = item.get(label_key), item.get(count_key)
         if not isinstance(label, str) or not label.strip() or type(count) is not int or count < 0:
             raise ValueError(f'Invalid label/count in {key}')
-        result.append({'label': label.strip(), 'count': count})
+        label = label.strip()
+        if label in seen:
+            raise ValueError(f'Duplicate label in {key}: {label}')
+        seen.add(label)
+        result.append({'label': label, 'count': count})
     return result
 
 student_source = payload.get('students')
@@ -77,30 +82,28 @@ students = {
     'byCampus': groups(student_source, 'byCampus', 'cơ sở', 'danh sách'),
     'byGender': groups(student_source, 'byGender', 'label', 'count'),
 }
-# Public, school-wide aggregates only. Do not expose individual ethnicity labels.
-raw_ethnicity = groups(student_source, 'byEthnicity', 'label', 'count')
-ethnic = {'Kinh': 0, 'Dân tộc thiểu số': 0, 'Chưa xác định': 0}
-import unicodedata
 
-def normalized(value):
-    value = unicodedata.normalize('NFD', value.strip().casefold())
-    return ''.join(ch for ch in value if unicodedata.category(ch) != 'Mn').replace('đ', 'd')
-
-for item in raw_ethnicity:
-    label = normalized(item['label'])
-    if label == 'kinh':
-        ethnic['Kinh'] += item['count']
-    elif label in ('', 'chua co thong tin', 'chua xac dinh', 'khong ro', 'khong xac dinh'):
-        ethnic['Chưa xác định'] += item['count']
-    else:
-        ethnic['Dân tộc thiểu số'] += item['count']
-students['byEthnicity'] = [{'label': k, 'count': v} for k, v in ethnic.items()]
-
-# Retain source-defined swimming categories; do not infer yes/no from unfamiliar labels.
+# Preserve the source's detailed ethnicity labels, without person/class-level records.
+students['byEthnicity'] = groups(student_source, 'byEthnicity', 'label', 'count')
 students['bySwimming'] = groups(student_source, 'bySwimming', 'label', 'count')
 for key in ('byEthnicity', 'bySwimming'):
     if sum(item['count'] for item in students[key]) != clean['students']:
         raise ValueError(f'{key} does not reconcile to total students')
+
+# Only two approved school-wide counts. Never publish disability types or policy details.
+indicators = student_source.get('indicators')
+if not isinstance(indicators, dict):
+    raise ValueError('Missing student indicators')
+public_indicators = {}
+for key in ('disability', 'policy'):
+    entry = indicators.get(key)
+    if not isinstance(entry, dict) or type(entry.get('count')) is not int:
+        raise ValueError(f'Missing/invalid indicator count: {key}')
+    count = entry['count']
+    if not 0 <= count <= clean['students']:
+        raise ValueError(f'Indicator out of range: {key}')
+    public_indicators[key] = {'count': count}
+students['indicators'] = public_indicators
 
 personnel = {
     k: groups(personnel_source, k, 'label', 'count')
@@ -166,8 +169,8 @@ output = {
 }
 path = Path('public/dashboard.json')
 path.parent.mkdir(parents=True, exist_ok=True)
-# Write only after all validations have passed.
 path.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding='utf-8')
-print('PASS: Dashboard V3.2 API, settings and grade-campus totals validated')
+print('PASS: Dashboard V3.2 API, settings, grade-campus and student indicators validated')
 print('Published approved totals:', clean)
+print('Published student indicators:', public_indicators)
 print('Published aggregate groups:', list(students), list(personnel))
