@@ -1,4 +1,3 @@
-
 name: Deploy Dashboard
 
 on:
@@ -25,9 +24,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
@@ -36,11 +37,36 @@ jobs:
           DASHBOARD_API_V32_URL: ${{ secrets.DASHBOARD_API_V32_URL }}
         run: python scripts/fetch_data.py
 
-      - uses: actions/configure-pages@v5
+      - name: Verify dashboard data
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'Files in public:'
+          ls -lah public/
+          test -s public/index.html
+          test -s public/dashboard.json
+          python -m json.tool public/dashboard.json > /dev/null
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = json.loads(Path('public/dashboard.json').read_text(encoding='utf-8'))
+          if payload.get('status') != 'success':
+              raise SystemExit('Dashboard status is not success')
+          totals = payload.get('data', {})
+          for key in ('students', 'classes', 'staff', 'campuses'):
+              if not isinstance(totals.get(key), int) or totals[key] < 0:
+                  raise SystemExit(f'Invalid dashboard total: {key}')
+          print('Dashboard JSON exists, is valid, and contains aggregate totals.')
+          PY
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: public
 
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
