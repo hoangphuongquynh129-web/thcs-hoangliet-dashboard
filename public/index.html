@@ -40,8 +40,7 @@
 </div>
 <h2 class="part-heading second-part">II. THỐNG KÊ ĐẢNG VIÊN</h2><p class="sub">Nguồn: sheet DANG_VIEN · Chỉ công bố số lượng tổng hợp, không hiển thị danh sách cá nhân</p>
 <div class="section"><h3>Đảng viên toàn trường và theo cơ sở</h3><div id="personnel-party"></div><div id="party-campus" style="margin-top:16px"></div></div>
-<div class="two"><div class="section"><h3>Theo chi bộ</h3><div id="party-branch"></div></div>
-<div class="section"><h3>Ban Chấp hành Đảng bộ</h3><div id="party-committee"></div><div id="party-committee-total" class="committee-total"></div><p class="sub" style="font-size:12px">Thống kê theo cột “Chức vụ Đảng” của sheet DANG_VIEN.</p></div></div>
+<div class="section"><h3>Ban Chấp hành Đảng bộ</h3><div id="party-committee"></div><div id="party-committee-total" class="committee-total"></div><p class="sub" style="font-size:12px">Thống kê theo cột “Chức vụ Đảng” của sheet DANG_VIEN.</p></div>
 </section>
 <footer id="status" role="status">Đang tải dữ liệu thống kê...</footer></main>
 <script>
@@ -104,7 +103,7 @@ function drawPartyMembers(m){
  document.getElementById('party-committee-total').textContent='';
  if(!m||!Number.isInteger(m.total)||m.total<0){root.textContent='Chưa có dữ liệu đảng viên từ dashboard.json';return;}
  const card=element('div','party-total-card');card.append(element('span','','Tổng số đảng viên'),element('strong','',fmt(m.total)));root.append(card);
- drawBars('party-campus',m.byCampus,'#16a078');drawBars('party-branch',m.byBranch,'#8a61c6');
+ drawBars('party-campus',m.byCampus,'#16a078');
  if(validGroups(m.byCommittee)&&m.byCommittee.length===3){
   drawBars('party-committee',m.byCommittee,'#8a61c6');
   const total=m.byCommittee.reduce((n,r)=>n+r.count,0);
