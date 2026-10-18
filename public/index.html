@@ -48,6 +48,26 @@
 #personnel-contracts .count,#personnel-qualifications .count{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
 .personnel-percent{font-size:11px;color:#64758b;font-weight:600}
 @media(max-width:560px){#personnel-contracts .chart-row,#personnel-qualifications .chart-row{grid-template-columns:minmax(104px,43%) minmax(0,1fr) 70px;gap:6px}.personnel-percent{font-size:10px}}
+
+/* Personnel summary cards and accessible campus donut */
+.position-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.position-stat{background:#f3f7fc;border:1px solid #e2eaf5;border-top:4px solid var(--stat-color);border-radius:10px;padding:15px 10px;min-width:0}
+.position-stat-label{font-size:13px;font-weight:700;color:#526781;min-height:36px}
+.position-stat-count{font-size:29px;font-weight:800;color:#183153;margin:5px 0;font-variant-numeric:tabular-nums}
+.position-stat-percent{font-size:13px;font-weight:650;color:#526781}
+.campus-donut-layout{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap}
+.campus-donut{width:190px;height:190px;flex:0 0 190px;position:relative}
+.campus-donut svg{width:100%;height:100%;display:block}
+.campus-donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none}
+.campus-donut-center strong{font-size:29px;color:#183153;font-variant-numeric:tabular-nums}
+.campus-donut-center span{font-size:12px;color:#64758b}
+.campus-donut-legend{display:flex;flex-direction:column;gap:16px;min-width:170px;flex:1}
+.campus-legend-item{display:grid;grid-template-columns:12px minmax(0,1fr);gap:9px;align-items:start}
+.campus-legend-dot{width:11px;height:11px;border-radius:50%;margin-top:4px}
+.campus-legend-label{font-size:13px;font-weight:650;color:#526781}
+.campus-legend-value{font-size:19px;font-weight:800;color:#183153;font-variant-numeric:tabular-nums}
+.campus-legend-percent{font-size:12px;color:#64758b;margin-left:7px}
+@media(max-width:560px){.position-stats{gap:6px}.position-stat{padding:11px 7px}.position-stat-label{font-size:11px}.position-stat-count{font-size:23px}.position-stat-percent{font-size:11px}.campus-donut{width:160px;height:160px;flex-basis:160px}}
 </style></head><body>
 <header><small id="school-kicker">TRƯỜNG THCS HOÀNG LIỆT</small><h1>Dashboard quản trị nhà trường</h1><div class="sub">Năm học <span id="school-year">2026–2027</span></div><div id="locations" class="locations" aria-label="Thông tin hai cơ sở"></div></header>
 <main><nav class="tabs" role="tablist" aria-label="Nhóm thống kê"><button class="tab" id="tab-overview" role="tab" aria-selected="true" aria-controls="overview" data-panel="overview">Tổng quan</button><button class="tab" id="tab-students" role="tab" aria-selected="false" aria-controls="students-panel" data-panel="students-panel">Học sinh</button><button class="tab" id="tab-personnel" role="tab" aria-selected="false" aria-controls="personnel-panel" data-panel="personnel-panel">Nhân sự</button></nav>
@@ -191,6 +211,33 @@ function drawPartyMembers(m){
   document.getElementById('party-committee-total').textContent='Tổng số thành viên BCH Đảng bộ: '+fmt(total);
  }else committee.textContent='Chưa có dữ liệu Ban Chấp hành Đảng bộ';
 }
+
+function drawPersonnelPositions(rows,total){
+ const root=document.getElementById('personnel-positions');root.replaceChildren();
+ if(!validGroups(rows)||!rows.length||!Number.isInteger(total)||total<=0||rows.reduce((n,r)=>n+r.count,0)!==total){throw Error('Thống kê nhân sự theo vị trí không khớp tổng số');}
+ const colors=['#2478e5','#16a078','#e7a124'];
+ const wrap=element('div','position-stats');
+ rows.forEach((r,i)=>{
+  const card=element('div','position-stat');card.style.setProperty('--stat-color',colors[i%colors.length]);
+  card.append(element('div','position-stat-label',r.label),element('div','position-stat-count',fmt(r.count)),element('div','position-stat-percent',(r.count/total*100).toLocaleString('vi-VN',{minimumFractionDigits:2,maximumFractionDigits:2})+'% toàn trường'));
+  wrap.append(card);
+ });root.append(wrap);
+}
+function drawPersonnelCampuses(rows,total){
+ const root=document.getElementById('personnel-campuses');root.replaceChildren();
+ if(!validGroups(rows)||rows.length!==2||!Number.isInteger(total)||total<=0||rows.reduce((n,r)=>n+r.count,0)!==total)throw Error('Thống kê nhân sự theo cơ sở không hợp lệ');
+ const ordered=['Trụ sở chính','Phân hiệu'].map(label=>rows.find(r=>r.label===label));
+ if(ordered.some(r=>!r))throw Error('Thiếu tên cơ sở nhân sự');
+ const colors=['#2478e5','#16a078'];const layout=element('div','campus-donut-layout');
+ const donut=element('div','campus-donut');const ns='http://www.w3.org/2000/svg';
+ const svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 200 200');svg.setAttribute('role','img');svg.setAttribute('aria-label',ordered.map(r=>r.label+': '+fmt(r.count)+' người').join('; '));
+ const track=document.createElementNS(ns,'circle');for(const [key,val] of Object.entries({cx:'100',cy:'100',r:'72',fill:'none',stroke:'#edf2f8','stroke-width':'24'}))track.setAttribute(key,val);svg.append(track);
+ const circumference=2*Math.PI*72;let offset=0;
+ ordered.forEach((r,i)=>{if(r.count===0)return;const circle=document.createElementNS(ns,'circle');const attrs={cx:'100',cy:'100',r:'72',fill:'none',stroke:colors[i],'stroke-width':'24','stroke-dasharray':`${r.count/total*circumference} ${circumference}`,'stroke-dashoffset':String(-offset),'transform':'rotate(-90 100 100)'};for(const [k,v] of Object.entries(attrs))circle.setAttribute(k,v);svg.append(circle);offset+=r.count/total*circumference;});
+ const center=element('div','campus-donut-center');center.append(element('strong','',fmt(total)),element('span','','CBGVNV toàn trường'));donut.append(svg,center);
+ const legend=element('div','campus-donut-legend');ordered.forEach((r,i)=>{const item=element('div','campus-legend-item'),dot=element('span','campus-legend-dot');dot.style.background=colors[i];const info=element('div');info.append(element('div','campus-legend-label',r.label));const line=element('div');line.append(element('span','campus-legend-value',fmt(r.count)),element('span','campus-legend-percent',(r.count/total*100).toLocaleString('vi-VN',{minimumFractionDigits:2,maximumFractionDigits:2})+'%'));info.append(line);item.append(dot,info);legend.append(item);});
+ layout.append(donut,legend);root.append(layout);
+}
 function drawPersonnelBarsWithPercent(id,rows,total,color){
  const root=document.getElementById(id);root.replaceChildren();
  if(!validGroups(rows)||!rows.length||!Number.isInteger(total)||total<=0){root.textContent='Chưa có dữ liệu';return;}
@@ -233,7 +280,7 @@ function show(data){const totals=data.data,settings=data.settings||{};for(const 
  document.getElementById('school-kicker').textContent=settings.schoolName||data.school||'Trường THCS Hoàng Liệt';document.getElementById('school-year').textContent=settings.schoolYear||data.schoolYear||'—';
  const loc=document.getElementById('locations');loc.replaceChildren();if(Array.isArray(settings.campuses))settings.campuses.forEach(c=>{if(typeof c.name!=='string'||typeof c.address!=='string')return;const item=element('div','location');item.append(element('b','',c.name),element('span','',c.address));loc.append(item);});
  const sum=document.getElementById('summary');sum.replaceChildren();[['students','Học sinh','#2478e5'],['classes','Lớp học','#16a078'],['staff','CBGVNV','#e7a124'],['campuses','Cơ sở','#8a61c6']].forEach(([key,label,color])=>{const card=element('article','card');card.style.setProperty('--accent',color);card.append(element('div','label',label),element('div','number',fmt(totals[key])));sum.append(card);});
- const s=data.students||{},p=data.personnel||{};drawClassesByCampus(data.classesByCampus,totals);drawBars('overview-grades',s.byGrade);drawBars('overview-positions',p.byPosition,'#16a078');drawGradeCampus(s.byGradeCampus,s.byGrade,s.byCampus,totals.students);drawBars('student-campuses',s.byCampus,'#16a078');drawBars('student-genders',s.byGender,'#8a61c6');drawEthnicities(s.byEthnicity,totals.students);drawStudentIndicators(s.indicators,s.bySwimming,totals.students);drawBars('personnel-positions',p.byPosition);drawBars('personnel-campuses',p.byCampus,'#16a078');drawPartyMembers(p.partyMembers);drawBars('personnel-subjects',p.bySubject);drawPersonnelBarsWithPercent('personnel-qualifications',sortQualifications(p.byQualification),totals.staff,'#8a61c6');drawPersonnelBarsWithPercent('personnel-contracts',groupContracts(p.byContract),totals.staff,'#d68a24');
+ const s=data.students||{},p=data.personnel||{};drawClassesByCampus(data.classesByCampus,totals);drawBars('overview-grades',s.byGrade);drawBars('overview-positions',p.byPosition,'#16a078');drawGradeCampus(s.byGradeCampus,s.byGrade,s.byCampus,totals.students);drawBars('student-campuses',s.byCampus,'#16a078');drawBars('student-genders',s.byGender,'#8a61c6');drawEthnicities(s.byEthnicity,totals.students);drawStudentIndicators(s.indicators,s.bySwimming,totals.students);drawPersonnelPositions(p.byPosition,totals.staff);drawPersonnelCampuses(p.byCampus,totals.staff);drawPartyMembers(p.partyMembers);drawBars('personnel-subjects',p.bySubject);drawPersonnelBarsWithPercent('personnel-qualifications',sortQualifications(p.byQualification),totals.staff,'#8a61c6');drawPersonnelBarsWithPercent('personnel-contracts',groupContracts(p.byContract),totals.staff,'#d68a24');
  const updated=data.updatedAt?new Date(data.updatedAt):null;document.getElementById('status').textContent='Nguồn: Google Sheets → Apps Script → GitHub Pages · Cập nhật API: '+(updated&&!Number.isNaN(updated.getTime())?updated.toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'chưa xác định');}
 setTabs();(async()=>{try{const response=await fetch('./dashboard.json',{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);show(await response.json());}catch(error){const status=document.getElementById('status');status.classList.add('error');status.textContent='Không tải được dữ liệu: '+error.message;}})();
 </script></body></html>
