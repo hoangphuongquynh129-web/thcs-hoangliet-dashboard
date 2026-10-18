@@ -25,6 +25,16 @@
 .campus-class-table td:nth-child(2){font-weight:800;color:#1764bb}
 .campus-class-table td:nth-child(4){font-weight:750;color:#16836a}
 .campus-class-table tfoot td{background:#f3f7fc;font-weight:800}
+
+/* Ethnicity: highlight the school-wide majority and compare minority groups on their own scale. */
+.eth-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.eth-stat{background:#f3f7fc;border:1px solid #e1e9f3;border-radius:11px;padding:13px 14px;border-top:3px solid var(--eth-color)}
+.eth-stat-label{color:#526781;font-size:13px;font-weight:650}.eth-stat-number{font-size:28px;font-weight:800;margin:5px 0;color:#183153;font-variant-numeric:tabular-nums}.eth-stat-percent{color:#64758b;font-size:12px}
+.eth-share{display:flex;height:13px;border-radius:20px;overflow:hidden;background:#edf2f8;margin-top:15px}.eth-share-kinh{background:#2478e5}.eth-share-minority{background:#e7a124;min-width:3px}
+.eth-share-legend{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:#53677d;margin-top:7px}
+.eth-subheading{font-size:14px;font-weight:750;margin:20px 0 12px;padding-top:15px;border-top:1px solid #e6edf5}
+.eth-row{display:grid;grid-template-columns:minmax(76px,27%) minmax(0,1fr) 42px;gap:10px;align-items:center;margin:10px 0;font-size:13px}.eth-track{height:11px;background:#edf2f8;border-radius:6px;overflow:hidden}.eth-fill{height:100%;background:#e7a124;border-radius:6px}.eth-count{text-align:right;font-weight:750;font-variant-numeric:tabular-nums}
+@media(max-width:560px){.eth-stat{padding:11px}.eth-stat-number{font-size:23px}.eth-row{gap:7px}}
 </style></head><body>
 <header><small id="school-kicker">TRƯỜNG THCS HOÀNG LIỆT</small><h1>Dashboard quản trị nhà trường</h1><div class="sub">Năm học <span id="school-year">2026–2027</span></div><div id="locations" class="locations" aria-label="Thông tin hai cơ sở"></div></header>
 <main><nav class="tabs" role="tablist" aria-label="Nhóm thống kê"><button class="tab" id="tab-overview" role="tab" aria-selected="true" aria-controls="overview" data-panel="overview">Tổng quan</button><button class="tab" id="tab-students" role="tab" aria-selected="false" aria-controls="students-panel" data-panel="students-panel">Học sinh</button><button class="tab" id="tab-personnel" role="tab" aria-selected="false" aria-controls="personnel-panel" data-panel="personnel-panel">Nhân sự</button></nav>
@@ -121,6 +131,27 @@ function drawClassesByCampus(rows,totals){
  fr.append(element('td','','Toàn trường'),element('td','',fmt(totals.classes)),element('td','',fmt(totals.students)),element('td','',(totals.students/totals.classes).toLocaleString('vi-VN',{minimumFractionDigits:1,maximumFractionDigits:1})));
  foot.append(fr);table.append(head,body,foot);wrap.append(table);root.append(wrap);
 }
+function drawEthnicities(rows,totalStudents){
+ const root=document.getElementById('student-ethnicities');root.replaceChildren();
+ if(!validGroups(rows)||!rows.length||!Number.isInteger(totalStudents)||totalStudents<=0){root.textContent='Chưa có dữ liệu';return;}
+ const sum=rows.reduce((n,r)=>n+r.count,0),kinh=rows.find(r=>r.label.trim().toLocaleLowerCase('vi-VN')==='kinh');
+ if(sum!==totalStudents||!kinh||rows.filter(r=>r.label.trim().toLocaleLowerCase('vi-VN')==='kinh').length!==1)throw Error('Dữ liệu dân tộc không hợp lệ');
+ const minority=totalStudents-kinh.count,percentage=n=>(100*n/totalStudents).toLocaleString('vi-VN',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
+ const stats=element('div','eth-summary');
+ for(const [label,value,color] of [['Dân tộc Kinh',kinh.count,'#2478e5'],['Dân tộc thiểu số',minority,'#e7a124']]){
+  const card=element('div','eth-stat');card.style.setProperty('--eth-color',color);
+  card.append(element('div','eth-stat-label',label),element('div','eth-stat-number',fmt(value)),element('div','eth-stat-percent',percentage(value)+' học sinh'));
+  stats.append(card);
+ }
+ const share=element('div','eth-share');share.setAttribute('role','img');share.setAttribute('aria-label','Tỷ lệ dân tộc Kinh '+percentage(kinh.count)+', dân tộc thiểu số '+percentage(minority));
+ const a=element('div','eth-share-kinh'),b=element('div','eth-share-minority');a.style.width=(100*kinh.count/totalStudents)+'%';b.style.width=(100*minority/totalStudents)+'%';share.append(a,b);
+ const legend=element('div','eth-share-legend');legend.append(element('span','','Kinh '+percentage(kinh.count)),element('span','','Thiểu số '+percentage(minority)));
+ root.append(stats,share,legend,element('div','eth-subheading','Chi tiết học sinh dân tộc thiểu số'));
+ const groups=rows.filter(r=>r!==kinh).sort((a,b)=>b.count-a.count||a.label.localeCompare(b.label,'vi'));
+ if(!groups.length){root.append(element('p','sub','Không có học sinh dân tộc thiểu số.'));return;}
+ const max=Math.max(1,...groups.map(r=>r.count));
+ for(const r of groups){const row=element('div','eth-row'),track=element('div','eth-track'),fill=element('div','eth-fill');fill.style.width=(r.count/max*100)+'%';track.append(fill);row.append(element('span','',r.label),track,element('span','eth-count',fmt(r.count)));root.append(row);}
+}
 function drawStudentIndicators(indicators){
  const root=document.getElementById('student-indicators');root.replaceChildren();
  for(const [key,label,color] of [['disability','Học sinh khuyết tật','#8a61c6'],['policy','Học sinh diện chính sách','#d68a24']]){
@@ -148,7 +179,7 @@ function show(data){const totals=data.data,settings=data.settings||{};for(const 
  document.getElementById('school-kicker').textContent=settings.schoolName||data.school||'Trường THCS Hoàng Liệt';document.getElementById('school-year').textContent=settings.schoolYear||data.schoolYear||'—';
  const loc=document.getElementById('locations');loc.replaceChildren();if(Array.isArray(settings.campuses))settings.campuses.forEach(c=>{if(typeof c.name!=='string'||typeof c.address!=='string')return;const item=element('div','location');item.append(element('b','',c.name),element('span','',c.address));loc.append(item);});
  const sum=document.getElementById('summary');sum.replaceChildren();[['students','Học sinh','#2478e5'],['classes','Lớp học','#16a078'],['staff','CBGVNV','#e7a124'],['campuses','Cơ sở','#8a61c6']].forEach(([key,label,color])=>{const card=element('article','card');card.style.setProperty('--accent',color);card.append(element('div','label',label),element('div','number',fmt(totals[key])));sum.append(card);});
- const s=data.students||{},p=data.personnel||{};drawClassesByCampus(data.classesByCampus,totals);drawBars('overview-grades',s.byGrade);drawBars('overview-positions',p.byPosition,'#16a078');drawGradeCampus(s.byGradeCampus,s.byGrade,s.byCampus,totals.students);drawBars('student-campuses',s.byCampus,'#16a078');drawBars('student-genders',s.byGender,'#8a61c6');drawBars('student-ethnicities',s.byEthnicity,'#2478e5');drawBars('student-swimming',s.bySwimming,'#16a078');drawStudentIndicators(s.indicators);drawBars('personnel-positions',p.byPosition);drawBars('personnel-campuses',p.byCampus,'#16a078');drawPartyMembers(p.partyMembers);drawBars('personnel-subjects',p.bySubject);drawBars('personnel-qualifications',p.byQualification,'#8a61c6');drawBars('personnel-contracts',p.byContract,'#d68a24');
+ const s=data.students||{},p=data.personnel||{};drawClassesByCampus(data.classesByCampus,totals);drawBars('overview-grades',s.byGrade);drawBars('overview-positions',p.byPosition,'#16a078');drawGradeCampus(s.byGradeCampus,s.byGrade,s.byCampus,totals.students);drawBars('student-campuses',s.byCampus,'#16a078');drawBars('student-genders',s.byGender,'#8a61c6');drawEthnicities(s.byEthnicity,totals.students);drawBars('student-swimming',s.bySwimming,'#16a078');drawStudentIndicators(s.indicators);drawBars('personnel-positions',p.byPosition);drawBars('personnel-campuses',p.byCampus,'#16a078');drawPartyMembers(p.partyMembers);drawBars('personnel-subjects',p.bySubject);drawBars('personnel-qualifications',p.byQualification,'#8a61c6');drawBars('personnel-contracts',p.byContract,'#d68a24');
  const updated=data.updatedAt?new Date(data.updatedAt):null;document.getElementById('status').textContent='Nguồn: Google Sheets → Apps Script → GitHub Pages · Cập nhật API: '+(updated&&!Number.isNaN(updated.getTime())?updated.toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'chưa xác định');}
 setTabs();(async()=>{try{const response=await fetch('./dashboard.json',{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);show(await response.json());}catch(error){const status=document.getElementById('status');status.classList.add('error');status.textContent='Không tải được dữ liệu: '+error.message;}})();
 </script></body></html>
