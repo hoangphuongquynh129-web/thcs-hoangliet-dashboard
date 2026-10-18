@@ -1,113 +1,96 @@
-public_indicators = {}
-for key in ('disability', 'policy'):
-    entry = indicators.get(key)
-    if not isinstance(entry, dict) or type(entry.get('count')) is not int:
-        raise ValueError(f'Missing/invalid indicator count: {key}')
-    count = entry['count']
-    if not 0 <= count <= clean['students']:
-        raise ValueError(f'Indicator out of range: {key}')
-    public_indicators[key] = {'count': count}
-students['indicators'] = public_indicators
+"""Fetch and validate approved public Dashboard V3.2 aggregates for GitHub Pages."""
+import json
+import os
+import urllib.request
+from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
-personnel = {
-    k: groups(personnel_source, k, 'label', 'count')
-    for k in ('byPosition', 'bySubject', 'byQualification', 'byContract', 'byCampus')
+URL = os.environ['DASHBOARD_API_V32_URL'].strip()
+p = urlsplit(URL)
+if (p.scheme != 'https' or p.netloc != 'script.google.com' or
+        not p.path.startswith('/macros/s/') or not p.path.endswith('/exec') or
+        parse_qs(p.query).get('v') != ['32']):
+    raise ValueError('Invalid V3.2 Apps Script URL')
+
+req = urllib.request.Request(URL, headers={'User-Agent': 'HoangLietDashboard/3.2'})
+with urllib.request.urlopen(req, timeout=60) as response:
+    payload = json.load(response)
+if payload.get('version') != '3.2.0' or payload.get('status') != 'success':
+    raise ValueError('Unexpected V3.2 API response')
+
+source = payload.get('data')
+if not isinstance(source, dict):
+    raise ValueError('Missing dashboard data')
+keys = ('students', 'classes', 'staff', 'campuses')
+clean = {key: source.get(key) for key in keys}
+if any(type(v) is not int or v < 0 for v in clean.values()):
+    raise ValueError('Invalid dashboard statistics')
+expected = {'students': 6110, 'classes': 121, 'staff': 227, 'campuses': 2}
+if clean != expected:
+    raise ValueError(f'Dashboard totals differ from approved baseline: {clean}')
+checks = payload.get('v32Checks')
+if not isinstance(checks, dict):
+    raise ValueError('Missing V3.2 checks')
+for key, value in {'studentRows': 6110, 'staffRows': 227,
+                   'studentDifference': 0, 'staffDifference': 0,
+                   'classCount': 121}.items():
+    if type(checks.get(key)) is not int or checks[key] != value:
+        raise ValueError(f'V3.2 validation failed: {key}')
+
+settings = payload.get('settings')
+if not isinstance(settings, dict):
+    raise ValueError('Missing CAI_DAT settings')
+for key in ('schoolName', 'schoolYear'):
+    if not isinstance(settings.get(key), str) or not settings[key].strip():
+        raise ValueError(f'Invalid setting: {key}')
+campuses = settings.get('campuses')
+if not isinstance(campuses, list) or len(campuses) != 2:
+    raise ValueError('Expected two campuses in settings')
+public_campuses = []
+for c in campuses:
+    if not isinstance(c, dict) or any(not isinstance(c.get(k), str) or not c[k].strip()
+                                          for k in ('name', 'address')):
+        raise ValueError('Invalid campus setting')
+    public_campuses.append({'name': c['name'].strip(), 'address': c['address'].strip()})
+
+# Strict allowlist: school-wide aggregate dimensions only.
+def groups(parent, key, label_key, count_key, *, allow_empty=False):
+    items = parent.get(key)
+    if not isinstance(items, list) or (not items and not allow_empty):
+        raise ValueError(f'Missing or empty aggregate: {key}')
+    result = []
+    seen = set()
+    for item in items:
+        if not isinstance(item, dict):
+            raise ValueError(f'Invalid row in {key}')
+        label, count = item.get(label_key), item.get(count_key)
+        if not isinstance(label, str) or not label.strip() or type(count) is not int or count < 0:
+            raise ValueError(f'Invalid label/count in {key}')
+        label = label.strip()
+        if label in seen:
+            raise ValueError(f'Duplicate label in {key}: {label}')
+        seen.add(label)
+        result.append({'label': label, 'count': count})
+    return result
+
+student_source = payload.get('students')
+personnel_source = payload.get('personnel')
+if not isinstance(student_source, dict) or not isinstance(personnel_source, dict):
+    raise ValueError('Missing aggregate sections')
+students = {
+    'byGrade': groups(student_source, 'byGrade', 'khối', 'danh sách'),
+    'byCampus': groups(student_source, 'byCampus', 'cơ sở', 'danh sách'),
+    'byGender': groups(student_source, 'byGender', 'label', 'count'),
 }
-for section, key, total in ((students, 'byGrade', clean['students']),
-                            (students, 'byCampus', clean['students']),
-                            (students, 'byGender', clean['students']),
-                            (personnel, 'byPosition', clean['staff'])):
-    actual = sum(x['count'] for x in section[key])
-    if actual != total:
-        raise ValueError(f'{key} totals {actual}, expected {total}')
 
-# Validate grade x campus cross-tab against both published marginal totals.
-raw_cross = student_source.get('byGradeCampus')
-if not isinstance(raw_cross, list) or len(raw_cross) != 4:
-    raise ValueError('Expected four grade-campus rows')
-by_grade = {r['label']: r['count'] for r in students['byGrade']}
-by_campus = {r['label']: r['count'] for r in students['byCampus']}
-if len(by_grade) != 4 or len(by_campus) != 2:
-    raise ValueError('Duplicate or missing grade/campus labels')
-expected_grades = {f'Khối {n}' for n in range(6, 10)}
-if set(by_grade) != expected_grades or set(by_campus) != {'Trụ sở chính', 'Phân hiệu'}:
-    raise ValueError('Unexpected grade or campus labels')
-cross = []
-seen = set()
-for item in raw_cross:
-    if not isinstance(item, dict):
-        raise ValueError('Invalid grade-campus row')
-    label = item.get('label')
-    if not isinstance(label, str) or label not in expected_grades or label in seen:
-        raise ValueError(f'Unexpected/duplicate grade-campus label: {label}')
-    seen.add(label)
-    values = [item.get(k) for k in ('mainCampus', 'branchCampus', 'total')]
-    if any(type(v) is not int or v < 0 for v in values):
-        raise ValueError(f'Invalid grade-campus counts: {label}')
-    main, branch, total = values
-    if main + branch != total or total != by_grade[label]:
-        raise ValueError(f'Grade-campus totals do not reconcile: {label}')
-    cross.append({'label': label, 'mainCampus': main,
-                  'branchCampus': branch, 'total': total})
-if seen != expected_grades:
-    raise ValueError('Missing grade-campus row')
-cross.sort(key=lambda r: int(r['label'].split()[-1]))
-if sum(r['mainCampus'] for r in cross) != by_campus['Trụ sở chính']:
-    raise ValueError('Main campus total does not reconcile')
-if sum(r['branchCampus'] for r in cross) != by_campus['Phân hiệu']:
-    raise ValueError('Branch campus total does not reconcile')
-if sum(r['total'] for r in cross) != clean['students']:
-    raise ValueError('Grade-campus grand total does not reconcile')
-students['byGradeCampus'] = cross
+# Preserve the source's detailed ethnicity labels, without person/class-level records.
+students['byEthnicity'] = groups(student_source, 'byEthnicity', 'label', 'count')
+students['bySwimming'] = groups(student_source, 'bySwimming', 'label', 'count')
+for key in ('byEthnicity', 'bySwimming'):
+    if sum(item['count'] for item in students[key]) != clean['students']:
+        raise ValueError(f'{key} does not reconcile to total students')
 
-# Party membership is sourced only from the dedicated DANG_VIEN sheet aggregate.
-party_source = personnel_source.get('partyMembers')
-if not isinstance(party_source, dict) or type(party_source.get('total')) is not int:
-    raise ValueError('Missing/invalid personnel.partyMembers')
-party_total = party_source['total']
-if not 0 <= party_total <= clean['staff']:
-    raise ValueError('Party member count exceeds staff total')
-party_campuses = groups(party_source, 'byCampus', 'label', 'count')
-party_branches = groups(party_source, 'byBranch', 'label', 'count')
-if {x['label'] for x in party_campuses} != {'Trụ sở chính', 'Phân hiệu'}:
-    raise ValueError('Unexpected party campus labels')
-if sum(x['count'] for x in party_campuses) != party_total:
-    raise ValueError('Party campus counts do not reconcile')
-if sum(x['count'] for x in party_branches) != party_total:
-    raise ValueError('Party branch counts do not reconcile')
-committee = groups(party_source, 'byCommittee', 'label', 'count')
-expected_roles = {'Bí thư Đảng ủy', 'Phó Bí thư Đảng ủy', 'Đảng ủy viên'}
-if {r['label'] for r in committee} != expected_roles or len(committee) != 3:
-    raise ValueError('Unexpected BCH role labels')
-committee_total = party_source.get('committeeTotal')
-if type(committee_total) is not int or committee_total != sum(r['count'] for r in committee) or committee_total > party_total:
-    raise ValueError('BCH role counts do not reconcile')
-personnel['partyMembers'] = {'total': party_total,
-                             'byCampus': party_campuses,
-                             'byBranch': party_branches,
-                             'byCommittee': committee,
-                             'committeeTotal': committee_total}
-
-output = {
-    'version': '3.2.0',
-    'status': 'success',
-    'school': settings['schoolName'].strip(),
-    'schoolYear': settings['schoolYear'].strip(),
-    'updatedAt': payload.get('updatedAt'),
-    'data': clean,
-    'settings': {'schoolName': settings['schoolName'].strip(),
-                 'schoolYear': settings['schoolYear'].strip(),
-                 'campuses': public_campuses},
-    'students': students,
-    'personnel': personnel,
-}
-path = Path('public/dashboard.json')
-path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding='utf-8')
-if not path.is_file() or path.stat().st_size == 0:
-    raise RuntimeError('Failed to create public/dashboard.json')
-print(f'Created {path.resolve()} ({path.stat().st_size} bytes)')
-print('PASS: Dashboard V3.2 API, settings, grade-campus and student indicators validated')
-print('Published approved totals:', clean)
-print('Published student indicators:', public_indicators)
-print('Published aggregate groups:', list(students), list(personnel))
+# Only two approved school-wide counts. Never publish disability types or policy details.
+indicators = student_source.get('indicators')
+if not isinstance(indicators, dict):
+    raise ValueError('Missing student indicators')
