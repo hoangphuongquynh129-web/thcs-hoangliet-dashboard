@@ -156,6 +156,38 @@ if sum(r['total'] for r in cross) != clean['students']:
     raise ValueError('Grade-campus grand total does not reconcile')
 students['byGradeCampus'] = cross
 
+# Class counts and average students per class, calculated from THEO_LOP in Apps Script.
+raw_classes = payload.get('classesByCampus')
+if not isinstance(raw_classes, list) or len(raw_classes) != 2:
+    raise ValueError('Expected two classesByCampus rows from API V3.2')
+class_campuses = []
+seen_class_campuses = set()
+for item in raw_classes:
+    if not isinstance(item, dict):
+        raise ValueError('Invalid classesByCampus row')
+    label = item.get('label')
+    count = item.get('classes')
+    pupils = item.get('students')
+    average = item.get('average')
+    if label not in ('Trụ sở chính', 'Phân hiệu') or label in seen_class_campuses:
+        raise ValueError(f'Invalid or duplicate class campus: {label}')
+    if type(count) is not int or count <= 0 or type(pupils) is not int or pupils < 0:
+        raise ValueError(f'Invalid class/student count at {label}')
+    if type(average) not in (int, float) or isinstance(average, bool):
+        raise ValueError(f'Invalid average at {label}')
+    if abs(average - round(pupils / count, 1)) > 1e-9:
+        raise ValueError(f'Average students/class does not reconcile at {label}')
+    if pupils != by_campus[label]:
+        raise ValueError(f'Student count does not reconcile at {label}')
+    seen_class_campuses.add(label)
+    class_campuses.append({'label': label, 'classes': count,
+                           'students': pupils, 'average': average})
+if seen_class_campuses != {'Trụ sở chính', 'Phân hiệu'}:
+    raise ValueError('Missing class campus')
+if sum(item['classes'] for item in class_campuses) != clean['classes']:
+    raise ValueError('Class campus total does not reconcile to 121')
+class_campuses.sort(key=lambda item: 0 if item['label'] == 'Trụ sở chính' else 1)
+
 # Party membership is sourced only from the dedicated DANG_VIEN sheet aggregate.
 party_source = personnel_source.get('partyMembers')
 if not isinstance(party_source, dict) or type(party_source.get('total')) is not int:
@@ -195,6 +227,7 @@ output = {
                  'schoolYear': settings['schoolYear'].strip(),
                  'campuses': public_campuses},
     'students': students,
+    'classesByCampus': class_campuses,
     'personnel': personnel,
 }
 path = Path('public/dashboard.json')
@@ -205,5 +238,6 @@ if not path.is_file() or path.stat().st_size == 0:
 print(f'Created {path.resolve()} ({path.stat().st_size} bytes)')
 print('PASS: Dashboard V3.2 API, settings, grade-campus and student indicators validated')
 print('Published approved totals:', clean)
+print('Published class counts by campus:', class_campuses)
 print('Published student indicators:', public_indicators)
 print('Published aggregate groups:', list(students), list(personnel))
