@@ -1,11 +1,13 @@
+
 name: Deploy Dashboard
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
-  schedule:
-    - cron: '*/30 * * * *'
+    paths:
+      - 'public/**'
+      - '.github/workflows/deploy.yml'
 
 permissions:
   contents: read
@@ -24,39 +26,37 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout public repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Fetch approved statistics
-        env:
-          DASHBOARD_API_V32_URL: ${{ secrets.DASHBOARD_API_V32_URL }}
-        run: python scripts/fetch_data.py
-
-      - name: Verify dashboard data
+      - name: Verify published files
         shell: bash
         run: |
           set -euo pipefail
-          echo 'Files in public:'
-          ls -lah public/
+
           test -s public/index.html
           test -s public/dashboard.json
+
           python -m json.tool public/dashboard.json > /dev/null
+
           python - <<'PY'
           import json
           from pathlib import Path
-          payload = json.loads(Path('public/dashboard.json').read_text(encoding='utf-8'))
+
+          payload = json.loads(
+              Path('public/dashboard.json').read_text(encoding='utf-8')
+          )
+
           if payload.get('status') != 'success':
-              raise SystemExit('Dashboard status is not success')
+              raise SystemExit('Invalid dashboard status')
+
           totals = payload.get('data', {})
           for key in ('students', 'classes', 'staff', 'campuses'):
-              if not isinstance(totals.get(key), int) or totals[key] < 0:
-                  raise SystemExit(f'Invalid dashboard total: {key}')
-          print('Dashboard JSON exists, is valid, and contains aggregate totals.')
+              value = totals.get(key)
+              if type(value) is not int or value < 0:
+                  raise SystemExit(f'Invalid total: {key}')
+
+          print('PASS: Published Dashboard files are valid')
           PY
 
       - name: Configure GitHub Pages
