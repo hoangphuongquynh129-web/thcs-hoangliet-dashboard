@@ -1,0 +1,365 @@
+{
+  "version": "3.2.0",
+  "status": "success",
+  "school": "Trường THCS Hoàng Liệt",
+  "schoolYear": "2026–2027",
+  "updatedAt": "2026-10-18T06:43:34.505Z",
+  "data": {
+    "students": 6110,
+    "classes": 121,
+    "staff": 227,
+    "campuses": 2
+  },
+  "settings": {
+    "schoolName": "Trường THCS Hoàng Liệt",
+    "schoolYear": "2026–2027",
+    "campuses": [
+      {
+        "name": "Trụ sở chính",
+        "address": "Ngõ 2, phố Hoàng Liệt, phường Hoàng Liệt, thành phố Hà Nội"
+      },
+      {
+        "name": "Phân hiệu",
+        "address": "Ô F6/TH1, phố Linh Đường, phường Hoàng Liệt, thành phố Hà Nội"
+      }
+    ]
+  },
+  "students": {
+    "byGrade": [
+      {
+        "label": "Khối 6",
+        "count": 1593
+      },
+      {
+        "label": "Khối 7",
+        "count": 1522
+      },
+      {
+        "label": "Khối 8",
+        "count": 1568
+      },
+      {
+        "label": "Khối 9",
+        "count": 1427
+      }
+    ],
+    "byCampus": [
+      {
+        "label": "Trụ sở chính",
+        "count": 2740
+      },
+      {
+        "label": "Phân hiệu",
+        "count": 3370
+      }
+    ],
+    "byGender": [
+      {
+        "label": "Nam",
+        "count": 3151
+      },
+      {
+        "label": "Nữ",
+        "count": 2959
+      }
+    ],
+    "byEthnicity": [
+      {
+        "label": "Kinh",
+        "count": 6036
+      },
+      {
+        "label": "Mường",
+        "count": 26
+      },
+      {
+        "label": "Tày",
+        "count": 18
+      },
+      {
+        "label": "Thái",
+        "count": 10
+      },
+      {
+        "label": "Nùng",
+        "count": 8
+      },
+      {
+        "label": "Sán Chay",
+        "count": 5
+      },
+      {
+        "label": "Hoa",
+        "count": 4
+      },
+      {
+        "label": "Thổ",
+        "count": 2
+      },
+      {
+        "label": "HMông",
+        "count": 1
+      }
+    ],
+    "bySwimming": [
+      {
+        "label": "Có",
+        "count": 4696
+      },
+      {
+        "label": "Chưa có thông tin",
+        "count": 1414
+      }
+    ],
+    "indicators": {
+      "disability": {
+        "count": 24
+      },
+      "policy": {
+        "count": 18
+      }
+    },
+    "byGradeCampus": [
+      {
+        "label": "Khối 6",
+        "mainCampus": 679,
+        "branchCampus": 914,
+        "total": 1593
+      },
+      {
+        "label": "Khối 7",
+        "mainCampus": 659,
+        "branchCampus": 863,
+        "total": 1522
+      },
+      {
+        "label": "Khối 8",
+        "mainCampus": 742,
+        "branchCampus": 826,
+        "total": 1568
+      },
+      {
+        "label": "Khối 9",
+        "mainCampus": 660,
+        "branchCampus": 767,
+        "total": 1427
+      }
+    ]
+  },
+  "classesByCampus": [
+    {
+      "label": "Trụ sở chính",
+      "classes": 54,
+      "students": 2740,
+      "average": 50.7
+    },
+    {
+      "label": "Phân hiệu",
+      "classes": 67,
+      "students": 3370,
+      "average": 50.3
+    }
+  ],
+  "personnel": {
+    "byPosition": [
+      {
+        "label": "Cán bộ quản lý",
+        "count": 3
+      },
+      {
+        "label": "Giáo viên",
+        "count": 207
+      },
+      {
+        "label": "Nhân viên",
+        "count": 17
+      }
+    ],
+    "bySubject": [
+      {
+        "label": "Công nghệ",
+        "count": 1
+      },
+      {
+        "label": "Công nghệ (Nông nghiệp)",
+        "count": 2
+      },
+      {
+        "label": "Giáo dục công dân",
+        "count": 6
+      },
+      {
+        "label": "Giáo dục thể chất",
+        "count": 8
+      },
+      {
+        "label": "Hóa học",
+        "count": 8
+      },
+      {
+        "label": "Khoa học tự nhiên",
+        "count": 19
+      },
+      {
+        "label": "Lịch sử",
+        "count": 8
+      },
+      {
+        "label": "Lịch sử và địa lý",
+        "count": 5
+      },
+      {
+        "label": "Mỹ thuật",
+        "count": 4
+      },
+      {
+        "label": "Nghệ thuật",
+        "count": 3
+      },
+      {
+        "label": "Ngữ văn",
+        "count": 39
+      },
+      {
+        "label": "Sinh học",
+        "count": 2
+      },
+      {
+        "label": "Thể dục",
+        "count": 6
+      },
+      {
+        "label": "Tin học",
+        "count": 6
+      },
+      {
+        "label": "Tiếng Anh",
+        "count": 23
+      },
+      {
+        "label": "Toán",
+        "count": 46
+      },
+      {
+        "label": "Vật lý",
+        "count": 9
+      },
+      {
+        "label": "Âm nhạc",
+        "count": 7
+      },
+      {
+        "label": "Địa lý",
+        "count": 7
+      }
+    ],
+    "byQualification": [
+      {
+        "label": "Cao đẳng",
+        "count": 1
+      },
+      {
+        "label": "Thạc sĩ",
+        "count": 33
+      },
+      {
+        "label": "Trung cấp",
+        "count": 7
+      },
+      {
+        "label": "Trình độ khác",
+        "count": 4
+      },
+      {
+        "label": "Đại học",
+        "count": 51
+      },
+      {
+        "label": "Đại học sư phạm",
+        "count": 127
+      },
+      {
+        "label": "Đại học và có chứng chỉ BDNVSP",
+        "count": 4
+      }
+    ],
+    "byContract": [
+      {
+        "label": "Hợp đồng lao động trên 1 năm",
+        "count": 76
+      },
+      {
+        "label": "Hợp đồng lao động từ 1 năm trở xuống",
+        "count": 11
+      },
+      {
+        "label": "Hợp đồng theo nghị định 111",
+        "count": 2
+      },
+      {
+        "label": "Hợp đồng theo nghị định 68",
+        "count": 2
+      },
+      {
+        "label": "Thỉnh giảng",
+        "count": 1
+      },
+      {
+        "label": "Viên chức/Công chức HĐLV không xác định thời hạn",
+        "count": 103
+      },
+      {
+        "label": "Viên chức/Công chức HĐLV xác định thời hạn",
+        "count": 32
+      }
+    ],
+    "byCampus": [
+      {
+        "label": "Trụ sở chính",
+        "count": 105
+      },
+      {
+        "label": "Phân hiệu",
+        "count": 122
+      }
+    ],
+    "partyMembers": {
+      "total": 68,
+      "byCampus": [
+        {
+          "label": "Trụ sở chính",
+          "count": 30
+        },
+        {
+          "label": "Phân hiệu",
+          "count": 38
+        }
+      ],
+      "byBranch": [
+        {
+          "label": "Chi bộ phân hiệu",
+          "count": 38
+        },
+        {
+          "label": "Chi bộ trụ sở chính",
+          "count": 30
+        }
+      ],
+      "byCommittee": [
+        {
+          "label": "Bí thư Đảng ủy",
+          "count": 1
+        },
+        {
+          "label": "Phó Bí thư Đảng ủy",
+          "count": 2
+        },
+        {
+          "label": "Đảng ủy viên",
+          "count": 2
+        }
+      ],
+      "committeeTotal": 5
+    }
+  }
+}
