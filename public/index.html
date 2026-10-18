@@ -20,10 +20,15 @@
 #personnel-panel .count{color:#183153;background:#f2f6fb;padding:4px 6px;border-radius:6px}
 @media(max-width:560px){.indicator-grid{grid-template-columns:1fr}#personnel-panel .chart-row{grid-template-columns:minmax(112px,44%) minmax(0,1fr) 42px;gap:6px}#personnel-panel .count{padding:3px}}
 .part-heading{padding:14px 16px;border-left:5px solid #2478e5;background:#eaf2fc;border-radius:8px;margin:24px 0 10px!important;font-size:21px}.second-part{border-left-color:#8a61c6;background:#f1ecfa;margin-top:40px!important}.committee-total{font-weight:750;margin-top:14px;padding:10px;background:#f4f7fb;border-radius:8px}.party-total-card{display:inline-flex;align-items:center;gap:20px;background:#f1ecfa;border-left:4px solid #8a61c6;border-radius:9px;padding:12px 20px}.party-total-card strong{font-size:30px;color:#183153}
+/* Campus class statistics */
+.campus-class-table th:not(:first-child),.campus-class-table td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.campus-class-table td:nth-child(2){font-weight:800;color:#1764bb}
+.campus-class-table td:nth-child(4){font-weight:750;color:#16836a}
+.campus-class-table tfoot td{background:#f3f7fc;font-weight:800}
 </style></head><body>
 <header><small id="school-kicker">TRƯỜNG THCS HOÀNG LIỆT</small><h1>Dashboard quản trị nhà trường</h1><div class="sub">Năm học <span id="school-year">2026–2027</span></div><div id="locations" class="locations" aria-label="Thông tin hai cơ sở"></div></header>
 <main><nav class="tabs" role="tablist" aria-label="Nhóm thống kê"><button class="tab" id="tab-overview" role="tab" aria-selected="true" aria-controls="overview" data-panel="overview">Tổng quan</button><button class="tab" id="tab-students" role="tab" aria-selected="false" aria-controls="students-panel" data-panel="students-panel">Học sinh</button><button class="tab" id="tab-personnel" role="tab" aria-selected="false" aria-controls="personnel-panel" data-panel="personnel-panel">Nhân sự</button></nav>
-<section class="panel" id="overview" role="tabpanel" aria-labelledby="tab-overview"><h2>Tổng quan</h2><div class="sub">Các chỉ số toàn trường</div><div class="grid" id="summary"></div><div class="two"><div class="section"><h3>Học sinh theo khối</h3><div id="overview-grades"></div></div><div class="section"><h3>Nhân sự theo vị trí</h3><div id="overview-positions"></div></div></div></section>
+<section class="panel" id="overview" role="tabpanel" aria-labelledby="tab-overview"><h2>Tổng quan</h2><div class="sub">Các chỉ số toàn trường</div><div class="grid" id="summary"></div><div class="two"><div class="section"><h3>Học sinh theo khối</h3><div id="overview-grades"></div></div><div class="section"><h3>Nhân sự theo vị trí</h3><div id="overview-positions"></div></div></div><div class="section"><h3>Quy mô lớp học theo cơ sở</h3><div id="overview-class-campuses"></div><p class="sub" style="font-size:12px">Số lớp được xác định theo mã lớp A/C trong sheet THEO_LOP; bình quân tính theo số học sinh thực tế.</p></div></section>
 <section class="panel" id="students-panel" role="tabpanel" aria-labelledby="tab-students" hidden><h2>Thống kê học sinh</h2><p class="sub">Phân bố theo khối, cơ sở, giới tính, dân tộc và các chỉ tiêu tổng hợp</p><div class="two"><div class="section wide"><h3>Học sinh theo khối và cơ sở</h3><div id="student-grade-campus"></div></div><div class="section"><h3>Theo cơ sở</h3><div id="student-campuses"></div></div><div class="section"><h3>Theo giới tính</h3><div id="student-genders"></div></div>
 <div class="section"><h3>Thành phần dân tộc</h3><div id="student-ethnicities"></div></div>
 <div class="section"><h3>Thông tin bơi lội</h3><div id="student-swimming"></div><p class="sub" style="font-size:12px">“Chưa có thông tin” không đồng nghĩa với “chưa biết bơi”.</p></div>
@@ -88,6 +93,34 @@ function drawGradeCampus(rows, gradeRows, campusRows, totalStudents){
  chart.append(legend);const summary=element('div','grade-summary');for(const [label,value,kind] of [['Trụ sở chính',main,'main'],['Phân hiệu',branch,'branch'],['Toàn trường',totalStudents,'all']]){const item=element('div','grade-summary-item '+kind);item.append(element('span','',label),element('strong','',fmt(value)));summary.append(item);}chart.append(summary);root.append(chart);
 }
 
+function drawClassesByCampus(rows,totals){
+ const root=document.getElementById('overview-class-campuses');root.replaceChildren();
+ if(!Array.isArray(rows)||rows.length!==2)throw Error('Thiếu dữ liệu số lớp theo cơ sở');
+ const map=new Map();
+ for(const r of rows){
+  if(!r||!['Trụ sở chính','Phân hiệu'].includes(r.label)||map.has(r.label)||
+     !Number.isInteger(r.classes)||r.classes<=0||!Number.isInteger(r.students)||r.students<0||
+     typeof r.average!=='number'||!Number.isFinite(r.average)||
+     Math.abs(r.average-Math.round(r.students/r.classes*10)/10)>0.000001)
+    throw Error('Số lớp/bình quân theo cơ sở không hợp lệ');
+  map.set(r.label,r);
+ }
+ if(map.size!==2||[...map.values()].reduce((n,r)=>n+r.classes,0)!==totals.classes||
+    [...map.values()].reduce((n,r)=>n+r.students,0)!==totals.students)
+  throw Error('Tổng số lớp hoặc học sinh theo cơ sở không khớp');
+ const wrap=element('div','table-wrap'),table=element('table','campus-class-table');
+ const head=element('thead'),hr=element('tr');
+ for(const label of ['Cơ sở','Số lớp','Học sinh','Bình quân HS/lớp'])hr.append(element('th','',label));
+ head.append(hr);const body=element('tbody');
+ for(const label of ['Trụ sở chính','Phân hiệu']){
+  const r=map.get(label),tr=element('tr');
+  tr.append(element('td','',label),element('td','',fmt(r.classes)),element('td','',fmt(r.students)),element('td','',r.average.toLocaleString('vi-VN',{minimumFractionDigits:1,maximumFractionDigits:1})));
+  body.append(tr);
+ }
+ const foot=element('tfoot'),fr=element('tr');
+ fr.append(element('td','','Toàn trường'),element('td','',fmt(totals.classes)),element('td','',fmt(totals.students)),element('td','',(totals.students/totals.classes).toLocaleString('vi-VN',{minimumFractionDigits:1,maximumFractionDigits:1})));
+ foot.append(fr);table.append(head,body,foot);wrap.append(table);root.append(wrap);
+}
 function drawStudentIndicators(indicators){
  const root=document.getElementById('student-indicators');root.replaceChildren();
  for(const [key,label,color] of [['disability','Học sinh khuyết tật','#8a61c6'],['policy','Học sinh diện chính sách','#d68a24']]){
@@ -115,7 +148,7 @@ function show(data){const totals=data.data,settings=data.settings||{};for(const 
  document.getElementById('school-kicker').textContent=settings.schoolName||data.school||'Trường THCS Hoàng Liệt';document.getElementById('school-year').textContent=settings.schoolYear||data.schoolYear||'—';
  const loc=document.getElementById('locations');loc.replaceChildren();if(Array.isArray(settings.campuses))settings.campuses.forEach(c=>{if(typeof c.name!=='string'||typeof c.address!=='string')return;const item=element('div','location');item.append(element('b','',c.name),element('span','',c.address));loc.append(item);});
  const sum=document.getElementById('summary');sum.replaceChildren();[['students','Học sinh','#2478e5'],['classes','Lớp học','#16a078'],['staff','CBGVNV','#e7a124'],['campuses','Cơ sở','#8a61c6']].forEach(([key,label,color])=>{const card=element('article','card');card.style.setProperty('--accent',color);card.append(element('div','label',label),element('div','number',fmt(totals[key])));sum.append(card);});
- const s=data.students||{},p=data.personnel||{};drawBars('overview-grades',s.byGrade);drawBars('overview-positions',p.byPosition,'#16a078');drawGradeCampus(s.byGradeCampus,s.byGrade,s.byCampus,totals.students);drawBars('student-campuses',s.byCampus,'#16a078');drawBars('student-genders',s.byGender,'#8a61c6');drawBars('student-ethnicities',s.byEthnicity,'#2478e5');drawBars('student-swimming',s.bySwimming,'#16a078');drawStudentIndicators(s.indicators);drawBars('personnel-positions',p.byPosition);drawBars('personnel-campuses',p.byCampus,'#16a078');drawPartyMembers(p.partyMembers);drawBars('personnel-subjects',p.bySubject);drawBars('personnel-qualifications',p.byQualification,'#8a61c6');drawBars('personnel-contracts',p.byContract,'#d68a24');
+ const s=data.students||{},p=data.personnel||{};drawClassesByCampus(data.classesByCampus,totals);drawBars('overview-grades',s.byGrade);drawBars('overview-positions',p.byPosition,'#16a078');drawGradeCampus(s.byGradeCampus,s.byGrade,s.byCampus,totals.students);drawBars('student-campuses',s.byCampus,'#16a078');drawBars('student-genders',s.byGender,'#8a61c6');drawBars('student-ethnicities',s.byEthnicity,'#2478e5');drawBars('student-swimming',s.bySwimming,'#16a078');drawStudentIndicators(s.indicators);drawBars('personnel-positions',p.byPosition);drawBars('personnel-campuses',p.byCampus,'#16a078');drawPartyMembers(p.partyMembers);drawBars('personnel-subjects',p.bySubject);drawBars('personnel-qualifications',p.byQualification,'#8a61c6');drawBars('personnel-contracts',p.byContract,'#d68a24');
  const updated=data.updatedAt?new Date(data.updatedAt):null;document.getElementById('status').textContent='Nguồn: Google Sheets → Apps Script → GitHub Pages · Cập nhật API: '+(updated&&!Number.isNaN(updated.getTime())?updated.toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'chưa xác định');}
 setTabs();(async()=>{try{const response=await fetch('./dashboard.json',{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);show(await response.json());}catch(error){const status=document.getElementById('status');status.classList.add('error');status.textContent='Không tải được dữ liệu: '+error.message;}})();
 </script></body></html>
